@@ -46,7 +46,8 @@
   }
   async function checkAdmin() {
     const { data, error } = await sb.rpc('is_admin');
-    return !error && data === true;
+    if (error) throw error;
+    return data === true;
   }
   async function boot() {
     const { data } = await sb.auth.getSession();
@@ -59,7 +60,11 @@
     const btn = $('login-btn'); btn.disabled = true; btn.textContent = 'Signing in...';
     try {
       const { error } = await sb.auth.signInWithPassword({ email: $('a-email').value.trim(), password: $('a-pass').value });
-      if (error) { showLogin('Wrong e-mail or password.'); return; }
+      if (error) {
+        const keyBad = error.status === 401 || error.status === 403 || /api key|apikey|jwt/i.test(error.message || '');
+        showLogin(keyBad ? 'The site cannot connect: the Supabase key in js/config.js is not valid or was revoked.' : 'Wrong e-mail or password.');
+        return;
+      }
       $('a-pass').value = '';
       await boot();
     } finally { btn.disabled = false; btn.textContent = 'Sign in'; }
@@ -502,5 +507,5 @@
     });
   });
 
-  boot().catch((e) => { console.error(e); showLogin('Could not reach the server. Check your connection and reload.'); });
+  boot().catch((e) => { console.error(e); showLogin('Could not connect. Check your internet connection, and that the Supabase key in js/config.js is valid.'); });
 })();

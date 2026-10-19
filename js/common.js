@@ -1,7 +1,17 @@
 /* Shared helpers for the public pages. */
 window.DC = (function () {
   const cfg = window.DC_CONFIG || {};
-  const configured = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && !/YOUR-PROJECT|YOUR-ANON/.test(cfg.SUPABASE_URL + cfg.SUPABASE_ANON_KEY));
+  /* a secret / service_role key must never run in a browser */
+  const secretKey = (() => {
+    const k = String(cfg.SUPABASE_ANON_KEY || '');
+    if (/^sb_secret_/.test(k)) return true;
+    const p = k.split('.');
+    if (p.length === 3) {
+      try { return JSON.parse(atob(p[1].replace(/-/g, '+').replace(/_/g, '/'))).role === 'service_role'; } catch (_) { /* not a JWT */ }
+    }
+    return false;
+  })();
+  const configured = !secretKey && !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && !/YOUR-PROJECT|YOUR-ANON/.test(cfg.SUPABASE_URL + cfg.SUPABASE_ANON_KEY));
 
   let _client = null;
   function client() {
@@ -80,9 +90,13 @@ window.DC = (function () {
   }
 
   function setupNotice() {
-    document.body.innerHTML = `<div class="setup"><div class="sheet">
+    document.body.innerHTML = secretKey
+      ? `<div class="setup"><div class="sheet">
+      <h1 style="font-size:1.5rem">Wrong kind of key</h1>
+      <p><code>js/config.js</code> contains a <b>secret</b> key. Secret keys must never be put in a website. Delete it from the file, revoke it in Supabase, and use the <b>publishable</b> key (or the legacy <b>anon</b> key) instead.</p></div></div>`
+      : `<div class="setup"><div class="sheet">
       <h1 style="font-size:1.5rem">Almost there</h1>
-      <p>This site is not connected to its database yet. Open <code>js/config.js</code> and paste your Supabase project URL and anon key, then reload.</p>
+      <p>This site is not connected to its database yet. Open <code>js/config.js</code> and paste your Supabase project URL and publishable key, then reload.</p>
       <p class="hint">Step-by-step instructions are in <code>README.md</code>.</p></div></div>`;
   }
 

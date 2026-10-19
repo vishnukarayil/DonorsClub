@@ -11,8 +11,8 @@ Donor membership site for Ahalia Blood Transfusion Services.
 ### 1. Create the database
 1. Sign up at supabase.com and create a project. Pick the region closest to you (Mumbai/Singapore).
 2. Open **SQL Editor > New query**, paste the whole of `supabase/schema.sql`, and run it. It creates the tables, the security rules, the banner storage and starter tiers and benefits.
-3. Open **Project Settings > API**. Copy the **Project URL** and the **anon public** key.
-4. Paste both into `js/config.js`. (Never paste the `service_role` key anywhere in this site.)
+3. Open **Project Settings > API Keys**. Copy the **Project URL** and the **Publishable key** (`sb_publishable_...`; the legacy `anon` key also works).
+4. Paste both into `js/config.js`. **Never paste a Secret key (`sb_secret_...`) or the legacy `service_role` key** into this site: it bypasses every security rule, GitHub will flag it and Supabase will revoke it. The site refuses to start if it finds one.
 
 ### 2. Create the first admin
 1. In Supabase: **Authentication > Users > Add user**. Enter your e-mail and a strong password, and tick auto-confirm.
