@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <title>Donors' Club</title>
+  <meta name="description" content="Log your blood donation and see your donor club tier and benefits.">
+  <meta name="theme-color" content="#5e0d1c">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Donors' Club">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="banner"><figure class="banner"><div class="banner-fallback">Donors' Club</div></figure></div>
+  <div class="topbar"><div class="wrap">
+    <span class="brand" id="brand">Donors' Club</span>
+    <a class="nav" href="profile.html">My profile</a>
+  </div></div>
+
+  <main><div class="wrap">
+    <div class="lede">
+      <h1>Log your donation</h1>
+      <p>Fill this in after you donate. Your first donation makes you a Silver member, and each repeat donation takes you up a tier.</p>
+    </div>
+
+    <div id="app-error" class="alert bad" role="alert" hidden></div>
+
+    <form id="form" class="sheet" novalidate autocomplete="on">
+      <fieldset>
+        <legend>About you</legend>
+        <div class="field" data-f="name">
+          <label class="lbl" for="name">Full name</label>
+          <input id="name" name="name" type="text" autocomplete="name" maxlength="80" required>
+          <p class="err" hidden></p>
+        </div>
+        <div class="field" data-f="dob">
+          <label class="lbl" for="dob">Date of birth</label>
+          <input id="dob" name="dob" type="date" autocomplete="bday" required>
+          <p class="err" hidden></p>
+        </div>
+        <div class="field" data-f="gender">
+          <span class="lbl" id="gender-l">Gender</span>
+          <div class="chips seg" role="radiogroup" aria-labelledby="gender-l">
+            <label class="chip"><input type="radio" name="gender" value="male"><span>Male</span></label>
+            <label class="chip"><input type="radio" name="gender" value="female"><span>Female</span></label>
+            <label class="chip"><input type="radio" name="gender" value="other"><span>Other</span></label>
+          </div>
+          <p class="err" hidden></p>
+        </div>
+        <div class="field" data-f="blood_group">
+          <span class="lbl" id="bg-l">Blood group</span>
+          <div class="chips blood" role="radiogroup" aria-labelledby="bg-l">
+            <label class="chip"><input type="radio" name="bg" value="A+"><span>A+</span></label>
+            <label class="chip"><input type="radio" name="bg" value="B+"><span>B+</span></label>
+            <label class="chip"><input type="radio" name="bg" value="O+"><span>O+</span></label>
+            <label class="chip"><input type="radio" name="bg" value="AB+"><span>AB+</span></label>
+            <label class="chip"><input type="radio" name="bg" value="A-"><span>A&minus;</span></label>
+            <label class="chip"><input type="radio" name="bg" value="B-"><span>B&minus;</span></label>
+            <label class="chip"><input type="radio" name="bg" value="O-"><span>O&minus;</span></label>
+            <label class="chip"><input type="radio" name="bg" value="AB-"><span>AB&minus;</span></label>
+          </div>
+          <p class="err" hidden></p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Where you live</legend>
+        <div class="row2">
+          <div class="field" data-f="village">
+            <label class="lbl" for="village">Village or town</label>
+            <input id="village" name="village" type="text" autocomplete="address-level2" maxlength="80" required>
+            <p class="err" hidden></p>
+          </div>
+          <div class="field" data-f="pincode">
+            <label class="lbl" for="pincode">Pincode</label>
+            <input id="pincode" name="pincode" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="6" pattern="[0-9]{6}" required>
+            <p class="err" hidden></p>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Work</legend>
+        <div class="field" data-f="ahalia">
+          <span class="lbl" id="ah-l">Do you work at Ahalia?</span>
+          <div class="chips seg2" role="radiogroup" aria-labelledby="ah-l">
+            <label class="chip"><input type="radio" name="ahalia" value="yes"><span>Yes</span></label>
+            <label class="chip"><input type="radio" name="ahalia" value="no"><span>No</span></label>
+          </div>
+          <p class="err" hidden></p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Your membership ID</legend>
+        <div class="field" data-f="phone">
+          <label class="lbl" for="phone">Mobile number</label>
+          <div class="phone">
+            <span class="cc" aria-hidden="true">+91</span>
+            <input id="phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" pattern="[6-9][0-9]{9}" placeholder="10 digits" required aria-describedby="phone-hint">
+          </div>
+          <p class="err" hidden></p>
+          <div class="callout" id="phone-hint"><b>Always use the same number.</b> We recognise repeat donors by their mobile number, so a different number starts a new membership at Silver.</div>
+        </div>
+      </fieldset>
+
+      <div class="hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+
+      <label class="consent" data-f="consent">
+        <input type="checkbox" id="consent" name="consent">
+        <span>I agree to the blood centre storing these details to run the donors' club and to contact me about donations. I confirm I donated blood today.</span>
+      </label>
+      <p class="err" data-e="consent" hidden></p>
+
+      <div id="form-alert" class="alert bad" role="alert" hidden></div>
+      <button class="btn primary" id="submit" type="submit">Record my donation</button>
+    </form>
+
+    <section id="done" class="sheet welcome" hidden tabindex="-1" aria-live="polite">
+      <div class="medal" id="medal"></div>
+      <h2 id="done-title"></h2>
+      <p id="done-text"></p>
+      <div id="done-flag" class="alert info" hidden></div>
+      <a class="btn primary block" href="profile.html">Open my profile</a>
+      <p class="hint">Keep using the same mobile number when you donate again.</p>
+    </section>
+  </div></main>
+
+  <div id="footer"></div>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/register.js"></script>
+</body>
+</html>

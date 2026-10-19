@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Donors' Club admin</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin">
+
+  <!-- sign in -->
+  <section id="login" class="login" hidden>
+    <form id="login-form" class="sheet" novalidate>
+      <h1>Admin sign in</h1>
+      <p class="hint" style="margin:6px 0 16px">Donors' Club back office for the blood centre team.</p>
+      <div class="field"><label class="lbl" for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="username" required></div>
+      <div class="field"><label class="lbl" for="a-pass">Password</label><input id="a-pass" type="password" autocomplete="current-password" required></div>
+      <div id="login-alert" class="alert bad" role="alert" hidden></div>
+      <button class="btn primary" id="login-btn" type="submit">Sign in</button>
+    </form>
+  </section>
+
+  <!-- console -->
+  <div id="app" hidden>
+    <header class="adminbar">
+      <div class="shell adminbar-in">
+        <strong class="brand" id="a-brand">Donors' Club admin</strong>
+        <nav class="tabs" role="tablist" aria-label="Sections">
+          <button role="tab" data-tab="donors" aria-selected="true">Donors</button>
+          <button role="tab" data-tab="review" aria-selected="false">Review <span class="badge" id="review-badge" hidden>0</span></button>
+          <button role="tab" data-tab="tiers" aria-selected="false">Tiers</button>
+          <button role="tab" data-tab="benefits" aria-selected="false">Benefits</button>
+          <button role="tab" data-tab="banner" aria-selected="false">Banner</button>
+          <button role="tab" data-tab="settings" aria-selected="false">Settings</button>
+        </nav>
+        <div class="who"><span id="a-user"></span> <button class="linkbtn" id="signout" type="button">Sign out</button></div>
+      </div>
+    </header>
+
+    <main class="shell">
+      <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+      <!-- DONORS -->
+      <section id="tab-donors" role="tabpanel">
+        <div class="stats" id="stats"></div>
+        <div class="filters">
+          <div><label class="lbl" for="f-search">Search</label><input id="f-search" type="search" placeholder="Name, phone or place"></div>
+          <div><label class="lbl" for="f-bg">Blood group</label>
+            <select id="f-bg"><option value="">All</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
+          <div><label class="lbl" for="f-ah">Works at Ahalia</label>
+            <select id="f-ah"><option value="">All</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div><label class="lbl" for="f-sort">Sort by</label>
+            <select id="f-sort"><option value="last">Last donation, newest</option><option value="last_old">Last donation, oldest</option><option value="name">Name</option><option value="count">Most donations</option><option value="joined">Newest members</option></select></div>
+          <label class="check"><input type="checkbox" id="f-due"> Last donation more than 3 months ago</label>
+          <button class="btn ghost small" id="export" type="button">Export CSV</button>
+        </div>
+        <div class="tablewrap">
+          <table id="donor-table">
+            <thead><tr>
+              <th>Name</th><th>Mobile</th><th>Date of birth</th><th>Gender</th><th>Blood</th><th>Village / town</th><th>Pincode</th><th>Ahalia</th>
+              <th>Donations</th><th>Tier</th><th>Last donated</th><th>Valid until</th><th></th>
+            </tr></thead>
+            <tbody id="donor-body"><tr><td colspan="13" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="pager"><button class="btn ghost small" id="prev" type="button">Previous</button><span id="page-info"></span><button class="btn ghost small" id="next" type="button">Next</button></div>
+      </section>
+
+      <!-- REVIEW -->
+      <section id="tab-review" role="tabpanel" hidden>
+        <h2>Entries waiting for review</h2>
+        <p class="hint">Suspicious entries are flagged from the Donors tab (open a donor's donations), or automatically when a repeat donor submits a different blood group. Flagged entries still count towards the tier until you delete them.</p>
+        <div id="flagged-list" class="cards"></div>
+        <h2 style="margin-top:32px">Deleted entries</h2>
+        <p class="hint">Deleted entries no longer count towards any tier and are hidden from the Donors tab. You can restore them, or remove them from the database for good.</p>
+        <div id="rejected-list" class="cards"></div>
+        <p><button class="btn danger small" id="purge" type="button" hidden>Permanently remove all deleted entries</button></p>
+      </section>
+
+      <!-- TIERS -->
+      <section id="tab-tiers" role="tabpanel" hidden>
+        <h2>Tier names</h2>
+        <p class="hint">Rung 1 is what a donor gets on their first donation; each repeat donation moves them up one rung. You can rename and recolour the rungs, but not add or remove them.</p>
+        <div id="tier-rows" class="rows"></div>
+        <p><button class="btn primary inline" id="save-tiers" type="button">Save tier names</button></p>
+      </section>
+
+      <!-- BENEFITS -->
+      <section id="tab-benefits" role="tabpanel" hidden>
+        <h2>Membership benefits</h2>
+        <p class="hint">Each benefit unlocks at the tier you choose and stays unlocked for higher tiers. Donors see locked benefits greyed out. Turn a benefit off to hide it everywhere.</p>
+        <form id="benefit-new" class="newrow" novalidate>
+          <input id="nb-title" type="text" placeholder="New benefit title" maxlength="120" aria-label="New benefit title" required>
+          <input id="nb-desc" type="text" placeholder="Short description (optional)" maxlength="400" aria-label="New benefit description">
+          <select id="nb-rank" aria-label="Unlocks at tier"></select>
+          <button class="btn primary inline" type="submit">Add benefit</button>
+        </form>
+        <div id="benefit-rows" class="rows"></div>
+      </section>
+
+      <!-- BANNER -->
+      <section id="tab-banner" role="tabpanel" hidden>
+        <h2>Banner</h2>
+        <p class="hint">Shown at the top of the donor form. Best size is 1600 &times; 600 pixels (wide, 8:3). Larger images are shrunk automatically. JPG, PNG or WebP.</p>
+        <div class="bannerbox">
+          <div id="banner-current" class="bannerprev"></div>
+          <div>
+            <label class="btn primary inline" for="banner-file" style="margin-top:0">Upload new banner</label>
+            <input id="banner-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+            <button class="btn ghost inline" id="banner-clear" type="button">Use the plain default</button>
+          </div>
+        </div>
+        <h3 style="margin-top:28px">Earlier banners</h3>
+        <div id="banner-gallery" class="gallery"></div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="tab-settings" role="tabpanel" hidden>
+        <h2>Club and blood centre details</h2>
+        <form id="settings-form" class="sheet form-grid" novalidate>
+          <div class="field"><label class="lbl" for="s-club">Club name</label><input id="s-club" type="text" maxlength="80"></div>
+          <div class="field"><label class="lbl" for="s-center">Blood centre name</label><input id="s-center" type="text" maxlength="120"></div>
+          <div class="field"><label class="lbl" for="s-license">Licence number</label><input id="s-license" type="text" maxlength="60"></div>
+          <div class="field"><label class="lbl" for="s-mo">Medical Officer</label><input id="s-mo" type="text" maxlength="120"></div>
+          <div class="field"><label class="lbl" for="s-phone">Phone for blood enquiries and doubts about donation</label><input id="s-phone" type="text" maxlength="30"></div>
+          <div class="field"><label class="lbl" for="s-email">E-mail for complaints and feedback</label><input id="s-email" type="email" maxlength="120"></div>
+          <div class="field"><label class="lbl" for="s-valid">Benefit validity after each donation (days)</label><input id="s-valid" type="number" min="1" max="3650"></div>
+          <div class="field"><label class="lbl" for="s-gap">Minimum days between two logged donations</label><input id="s-gap" type="number" min="0" max="365">
+            <p class="hint">A repeat entry inside this window is refused as a duplicate. Set 0 to switch the check off.</p></div>
+          <div class="field wide"><label class="lbl" for="s-disc">Disclaimer shown on profiles</label><textarea id="s-disc" rows="2" maxlength="400"></textarea></div>
+          <div class="wide"><button class="btn primary inline" type="submit">Save settings</button></div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- donations dialog -->
+  <dialog id="don-dlg" class="wide-dlg">
+    <h2 id="don-title">Donations</h2>
+    <p class="hint" id="don-sub"></p>
+    <div class="tablewrap"><table class="small-table"><thead><tr><th>Date and time (IST)</th><th>Status</th><th>Added</th><th></th></tr></thead><tbody id="don-body"></tbody></table></div>
+    <form id="don-add" class="newrow" novalidate>
+      <label class="lbl" for="don-new" style="margin:0">Add a donation</label>
+      <input id="don-new" type="datetime-local" required>
+      <button class="btn primary inline" type="submit">Add</button>
+    </form>
+    <form method="dialog"><button class="btn ghost inline">Close</button></form>
+  </dialog>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
