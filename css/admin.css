@@ -96,17 +96,6 @@ td.empty { text-align: center; padding: 30px; color: var(--slate); }
 .newrow input[type=text] { flex: 1 1 200px; width: auto; }
 .newrow select, .newrow input[type=datetime-local] { width: auto; }
 
-.bannerbox { display: grid; gap: 16px; grid-template-columns: minmax(260px, 560px) 1fr; align-items: start; margin-top: 14px; }
-@media (max-width: 800px) { .bannerbox { grid-template-columns: 1fr; } }
-.bannerbox .btn { margin-right: 8px; margin-bottom: 8px; }
-.bannerprev { background: #fff; border: 1px dashed #b9c1cc; border-radius: 12px; overflow: hidden; }
-.bannerprev img { width: 100%; aspect-ratio: 8 / 3; object-fit: cover; }
-.bannerprev .banner-fallback { font-size: 1.2rem; }
-.gallery { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-.gitem { background: #fff; border: 1px solid var(--mist); border-radius: 12px; overflow: hidden; }
-.gitem img { width: 100%; aspect-ratio: 8 / 3; object-fit: cover; }
-.gitem .gb { padding: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.gitem .actions .btn { min-height: 34px; }
 
 .form-grid { display: grid; gap: 4px 18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); max-width: 900px; margin-top: 14px; }
 .form-grid .field { margin-top: 10px; }
@@ -115,3 +104,13 @@ td.empty { text-align: center; padding: 30px; color: var(--slate); }
 .wide-dlg { max-width: 760px; }
 .small-table td, .small-table th { padding: 8px; }
 .wide-dlg form[method=dialog] { margin-top: 14px; }
+
+/* banner editor */
+#banner-preview { border: 1px solid var(--mist); border-radius: 12px; overflow: hidden; margin: 14px 0; max-width: 640px; }
+.filerow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.filerow .hint { margin: 0; }
+.filerow .btn { min-height: 42px; }
+#banner-form .chips { max-width: 260px; }
+#banner-form input[type=color] { width: 64px; min-height: 44px; padding: 2px; border-radius: 8px; cursor: pointer; }
+#banner-form input[type=range] { width: 100%; max-width: 300px; min-height: 0; padding: 0; accent-color: var(--red); }
+.legal-admin { margin: 40px 0 0; font-size: .8rem; color: var(--slate); text-align: center; }
