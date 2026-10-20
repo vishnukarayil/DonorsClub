@@ -108,17 +108,48 @@
       <!-- BANNER -->
       <section id="tab-banner" role="tabpanel" hidden>
         <h2>Banner</h2>
-        <p class="hint">Shown at the top of the donor form. Best size is 1600 &times; 600 pixels (wide, 8:3). Larger images are shrunk automatically. JPG, PNG or WebP.</p>
-        <div class="bannerbox">
-          <div id="banner-current" class="bannerprev"></div>
-          <div>
-            <label class="btn primary inline" for="banner-file" style="margin-top:0">Upload new banner</label>
-            <input id="banner-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-            <button class="btn ghost inline" id="banner-clear" type="button">Use the plain default</button>
-          </div>
-        </div>
-        <h3 style="margin-top:28px">Earlier banners</h3>
-        <div id="banner-gallery" class="gallery"></div>
+        <p class="hint">Shown at the top of the donor form. The preview updates as you type; press Save banner to publish it.</p>
+        <div id="banner-preview" aria-live="polite"></div>
+        <form id="banner-form" class="sheet form-grid" novalidate>
+          <div class="field wide"><label class="lbl" for="b-title">Title</label>
+            <input id="b-title" type="text" maxlength="80"></div>
+          <div class="field wide"><label class="lbl" for="b-prog">Programme</label>
+            <input id="b-prog" type="text" maxlength="120" placeholder="For example: World Blood Donor Day camp, 14 June">
+            <p class="hint">A line under the title. Leave empty to hide it.</p></div>
+
+          <div class="field"><span class="lbl">Logo</span>
+            <div class="filerow">
+              <label class="btn ghost small" for="b-logo-file">Upload logo</label>
+              <input id="b-logo-file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+              <button class="btn ghost small" id="b-logo-clear" type="button">Remove</button>
+              <span class="hint" id="b-logo-name"></span>
+            </div>
+            <p class="hint">A PNG with a transparent background looks best.</p></div>
+
+          <div class="field"><span class="lbl" id="b-mode-l">Background</span>
+            <div class="chips seg2" role="radiogroup" aria-labelledby="b-mode-l">
+              <label class="chip"><input type="radio" name="b-mode" value="color"><span>Colour</span></label>
+              <label class="chip"><input type="radio" name="b-mode" value="image"><span>Image</span></label>
+            </div></div>
+
+          <div class="field" id="b-color-wrap"><label class="lbl" for="b-color">Background colour</label>
+            <input id="b-color" type="color" value="#5e0d1c">
+            <p class="hint">The text colour switches between light and dark automatically.</p></div>
+
+          <div class="field" id="b-image-wrap" hidden><span class="lbl">Background image</span>
+            <div class="filerow">
+              <label class="btn ghost small" for="b-image-file">Upload image</label>
+              <input id="b-image-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+              <button class="btn ghost small" id="b-image-clear" type="button">Remove</button>
+              <span class="hint" id="b-image-name"></span>
+            </div>
+            <label class="lbl" for="b-darken" style="margin-top:12px">Darken image: <span id="b-darken-val">40</span>%</label>
+            <input id="b-darken" type="range" min="0" max="80" step="5" value="40">
+            <p class="hint">Text on the banner is white, so darken bright images to keep it readable. Wide images, around 1600 &times; 600 pixels, work best.</p></div>
+
+          <div class="wide"><button class="btn primary inline" type="submit">Save banner</button>
+            <button class="btn ghost inline" id="b-discard" type="button">Discard changes</button></div>
+        </form>
       </section>
 
       <!-- SETTINGS -->
@@ -138,6 +169,7 @@
           <div class="wide"><button class="btn primary inline" type="submit">Save settings</button></div>
         </form>
       </section>
+      <p class="legal-admin" id="a-legal"></p>
     </main>
   </div>
 
