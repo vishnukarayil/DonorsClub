@@ -7,7 +7,7 @@
 
   /* ---------- club content: banner, name, footer ---------- */
   DC.loadClub().then((club) => {
-    $('banner').innerHTML = DC.bannerHTML(club);
+    $('banner').innerHTML = DC.bannerHTML(club.settings);
     $('footer').innerHTML = DC.footerHTML(club);
     $('brand').textContent = club.settings.club_name;
     document.title = club.settings.club_name;
