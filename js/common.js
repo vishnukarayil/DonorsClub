@@ -51,7 +51,9 @@ window.DC = (function () {
     return lum > 0.6 ? '#111' : '#fff';
   }
 
-  /* ---------- club content (settings, tiers, benefits, banner) ---------- */
+  /* ---------- club content (settings, tiers, benefits) ---------- */
+  const VERSION = '1.1.0';
+
   async function loadClub() {
     const sb = client();
     const [s, t, b] = await Promise.all([
@@ -62,20 +64,40 @@ window.DC = (function () {
     if (s.error) throw s.error;
     if (t.error) throw t.error;
     if (b.error) throw b.error;
-    let bannerUrl = null;
-    if (s.data.active_banner_id) {
-      const r = await sb.from('banners').select('path').eq('id', s.data.active_banner_id).maybeSingle();
-      if (r.data) bannerUrl = sb.storage.from('banners').getPublicUrl(r.data.path).data.publicUrl;
-    }
-    return { settings: s.data, tiers: t.data, benefits: b.data, bannerUrl };
+    return { settings: s.data, tiers: t.data, benefits: b.data };
   }
 
-  function bannerHTML(club) {
-    if (club.bannerUrl) {
-      return `<figure class="banner"><img src="${esc(club.bannerUrl)}" alt="${esc(club.settings.club_name)} banner" fetchpriority="high"></figure>`;
-    }
-    return `<figure class="banner"><div class="banner-fallback">${esc(club.settings.club_name)}</div></figure>`;
+  /* ---------- banner: built from settings.banner, drawn as live HTML ---------- */
+  const BANNER_DEFAULT = { title: null, programme: '', logo: '', bg_mode: 'color', bg_color: '#5e0d1c', bg_image: '', darken: 40 };
+  const safePath = (p) => (/^[A-Za-z0-9._-]{1,120}$/.test(p || '') ? p : '');
+  const safeColor = (c, d) => (/^#[0-9a-f]{6}$/i.test(c || '') ? c : d);
+  const publicUrl = (path) => `${String(cfg.SUPABASE_URL).replace(/\/+$/, '')}/storage/v1/object/public/banners/${path}`;
+
+  function bannerConfig(settings) {
+    const raw = (settings && settings.banner) || {};
+    const b = { ...BANNER_DEFAULT, ...raw };
+    if (b.title === null || b.title === undefined) b.title = (settings && settings.club_name) || '';
+    return b;
   }
+
+  function bannerHTML(settings) {
+    const b = bannerConfig(settings);
+    const bg = safeColor(b.bg_color, BANNER_DEFAULT.bg_color);
+    const img = b.bg_mode === 'image' && safePath(b.bg_image) ? publicUrl(safePath(b.bg_image)) : '';
+    const logo = safePath(b.logo) ? publicUrl(safePath(b.logo)) : '';
+    const ink = img ? '#ffffff' : inkOn(bg);
+    const dark = Math.max(0, Math.min(80, Number(b.darken) || 0)) / 100;
+    const title = String(b.title || '').trim();
+    const prog = String(b.programme || '').trim();
+    const style = `--bn-bg:${bg};--bn-ink:${ink};--bn-dark:${dark}` + (img ? `;--bn-img:url(${esc(img)})` : '');
+    return `<figure class="banner${img ? ' has-img' : ''}" style="${style}"><div class="banner-in">` +
+      (logo ? `<img class="banner-logo" src="${esc(logo)}" alt="">` : '') +
+      (title || prog ? `<div class="banner-text">${title ? `<div class="banner-title">${esc(title)}</div>` : ''}${prog ? `<div class="banner-prog">${esc(prog)}</div>` : ''}</div>` : '') +
+      `</div></figure>`;
+  }
+
+  const legalText = (s) => `© ${new Date().getFullYear()} ${s.center_name}. All rights reserved.`;
+  const versionText = (s) => `${s.club_name} app, version ${VERSION}`;
 
   function footerHTML(club) {
     const s = club.settings;
@@ -86,6 +108,7 @@ window.DC = (function () {
       <p>Medical Officer: ${esc(s.medical_officer)}</p>
       <p>Blood enquiries and donation doubts: <a href="tel:${esc(tel)}">${esc(s.enquiry_phone)}</a></p>
       <p>Complaints and feedback: <a href="mailto:${esc(s.feedback_email)}">${esc(s.feedback_email)}</a></p>
+      <p class="legal">${esc(legalText(s))}<br>${esc(versionText(s))}</p>
     </div></footer>`;
   }
 
@@ -132,7 +155,7 @@ window.DC = (function () {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
 
-  return { cfg, configured, client, esc, fmtDate, fmtDateTime, icons, inkOn, loadClub, bannerHTML, footerHTML, setupNotice, fail, initInstall,
+  return { cfg, configured, client, esc, fmtDate, fmtDateTime, icons, inkOn, loadClub, bannerConfig, bannerHTML, footerHTML, legalText, versionText, VERSION, setupNotice, fail, initInstall,
            store: {
              get: () => { try { return { phone: localStorage.getItem('dc.phone'), dob: localStorage.getItem('dc.dob') }; } catch (_) { return {}; } },
              set: (phone, dob) => { try { localStorage.setItem('dc.phone', phone); localStorage.setItem('dc.dob', dob); } catch (_) { /* private mode */ } },
