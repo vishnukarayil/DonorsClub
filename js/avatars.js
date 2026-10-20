@@ -1,68 +1,64 @@
-/* Original superhero silhouettes (generic caped figures, hands on hips).
-   Usage: DCAvatar.svg('male' | 'female' | 'other', '#D4A017')  ->  SVG string */
+/* Minimal masked-hero busts: head to mid-chest, shoulders covered, cape behind.
+   Original silhouettes. Usage: DCAvatar.svg('male' | 'female' | 'other', '#D4A017') -> SVG string */
 window.DCAvatar = (function () {
   let n = 0;
-  const FIG = '#1c0b11';
+  const FIG = '#1c0b11';      // silhouette
+  const HAIR = '#4a2330';     // hair, a shade lighter so the hairline reads
+  const MASK = '#0b0407';     // eye mask, a shade darker
 
-  const cape = {
-    male:   'M64 84 C44 130 36 176 30 222 L66 210 L100 226 L134 210 L170 222 C164 176 156 130 136 84 Z',
-    female: 'M68 86 C50 130 44 176 38 222 L70 210 L100 224 L130 210 L162 222 C156 176 150 130 132 86 Z',
-    other:  'M66 85 C47 130 40 176 34 222 L68 210 L100 225 L132 210 L166 222 C160 176 153 130 134 85 Z'
-  };
-
-  const bodies = {
-    male: `
-      <ellipse cx="100" cy="50" rx="15.5" ry="18.5"/>
-      <rect x="93" y="64" width="14" height="14"/>
-      <path d="M60 86 Q100 74 140 86 L132 108 L118 146 L82 146 L68 108 Z"/>
-      <path d="M60 86 L46 92 L38 122 L60 152 L76 148 L58 122 L64 102 Z"/>
-      <path d="M140 86 L154 92 L162 122 L140 152 L124 148 L142 122 L136 102 Z"/>
-      <path d="M78 146 L100 146 L98 216 L72 216 Z"/>
-      <path d="M100 146 L122 146 L128 216 L102 216 Z"/>
-      <path d="M68 206 L99 206 L99 222 L64 222 Z"/>
-      <path d="M101 206 L132 206 L136 222 L101 222 Z"/>`,
-    female: `
-      <path d="M82 50 C80 22 120 22 118 50 C128 72 130 98 122 120 C116 106 114 84 112 68 L88 68 C86 84 84 106 78 120 C70 98 72 72 82 50 Z"/>
-      <ellipse cx="100" cy="50" rx="14.5" ry="18"/>
-      <rect x="94.5" y="64" width="11" height="14"/>
-      <path d="M68 88 Q100 78 132 88 L127 108 L114 130 L122 152 L78 152 L86 130 L73 108 Z"/>
-      <path d="M68 88 L56 94 L50 122 L70 152 L82 148 L64 122 L69 104 Z"/>
-      <path d="M132 88 L144 94 L150 122 L130 152 L118 148 L136 122 L131 104 Z"/>
-      <path d="M80 150 L100 150 L97 218 L80 218 Z"/>
-      <path d="M100 150 L120 150 L120 218 L103 218 Z"/>
-      <path d="M76 208 L98 208 L98 222 L72 222 Z"/>
-      <path d="M102 208 L124 208 L128 222 L102 222 Z"/>`,
-    other: `
-      <ellipse cx="100" cy="50" rx="15" ry="18.5"/>
-      <rect x="93.5" y="64" width="13" height="14"/>
-      <path d="M63 86 Q100 76 137 86 L130 108 L116 142 L84 142 L70 108 Z"/>
-      <path d="M63 86 L50 92 L43 122 L63 150 L77 146 L60 122 L66 102 Z"/>
-      <path d="M137 86 L150 92 L157 122 L137 150 L123 146 L140 122 L134 102 Z"/>
-      <path d="M80 142 L100 142 L98 216 L75 216 Z"/>
-      <path d="M100 142 L120 142 L125 216 L102 216 Z"/>
-      <path d="M71 206 L99 206 L99 222 L67 222 Z"/>
-      <path d="M101 206 L129 206 L133 222 L101 222 Z"/>`
+  const shapes = {
+    male: {
+      cape: 'M12 216 C12 150 40 118 72 110 L128 110 C160 118 188 150 188 216 Z M84 126 L72 106 L94 118 Z M116 126 L128 106 L106 118 Z',
+      body: 'M22 216 C24 160 50 134 84 126 L100 138 L116 126 C150 134 176 160 178 216 Z',
+      neck: 'M89 98 H111 V132 Q100 140 89 132 Z',
+      head: 'M76 72 C76 50 88 44 100 44 C112 44 124 50 124 72 C124 92 114 105 100 105 C86 105 76 92 76 72 Z',
+      hair: 'M75 74 C72 46 90 37 100 37 C112 37 128 46 125 74 C120 62 112 57 100 57 C88 57 80 62 75 74 Z',
+      extra: ''
+    },
+    female: {
+      cape: 'M20 216 C20 152 46 120 74 112 L126 112 C154 120 180 152 180 216 Z M86 128 L76 108 L95 119 Z M114 128 L124 108 L105 119 Z',
+      body: 'M30 216 C32 164 56 138 86 128 L100 138 L114 128 C144 138 168 164 170 216 Z',
+      neck: 'M91 98 H109 V132 Q100 138 91 132 Z',
+      head: 'M78 72 C78 50 89 44 100 44 C111 44 122 50 122 72 C122 91 113 104 100 104 C87 104 78 91 78 72 Z',
+      hair: 'M77 74 C74 46 90 37 100 37 C112 37 126 46 123 74 C118 62 112 57 100 57 C88 57 82 62 77 74 Z',
+      extra: 'M117 50 C150 46 162 88 148 128 C148 104 138 88 124 78 Z'   // ponytail
+    },
+    other: {
+      cape: 'M16 216 C16 150 43 119 73 111 L127 111 C157 119 184 150 184 216 Z M85 127 L74 107 L95 118 Z M115 127 L126 107 L105 118 Z',
+      body: 'M26 216 C28 162 52 136 85 127 L100 138 L115 127 C148 136 172 162 174 216 Z',
+      neck: 'M90 98 H110 V132 Q100 139 90 132 Z',
+      head: 'M77 72 C77 50 88 44 100 44 C112 44 123 50 123 72 C123 91 114 104 100 104 C86 104 77 91 77 72 Z',
+      hair: 'M76 73 C74 47 90 39 100 39 C111 39 126 47 124 73 C119 63 112 58 100 58 C88 58 81 63 76 73 Z',
+      extra: ''
+    }
   };
 
   function svg(gender, color) {
-    const g = bodies[gender] ? gender : 'other';
+    const s = shapes[gender] || shapes.other;
     const id = 'av' + (++n);
     const c = /^#[0-9a-f]{6}$/i.test(color) ? color : '#9AA3AE';
-    return `<svg viewBox="0 0 200 240" role="img" aria-label="Donor avatar" xmlns="http://www.w3.org/2000/svg">
+    return `<svg viewBox="0 0 200 200" role="img" aria-label="Donor avatar" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <clipPath id="${id}c"><circle cx="100" cy="120" r="110"/></clipPath>
-    <radialGradient id="${id}" cx="50%" cy="34%" r="72%">
+    <clipPath id="${id}c"><circle cx="100" cy="100" r="98"/></clipPath>
+    <radialGradient id="${id}" cx="50%" cy="30%" r="75%">
       <stop offset="0" stop-color="#fff" stop-opacity=".55"/>
       <stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <circle cx="100" cy="120" r="110" fill="${c}"/>
-  <circle cx="100" cy="120" r="110" fill="url(#${id})"/>
+  <circle cx="100" cy="100" r="98" fill="${c}"/>
+  <circle cx="100" cy="100" r="98" fill="url(#${id})"/>
   <g clip-path="url(#${id}c)">
-    <path d="${cape[g]}" fill="${FIG}" opacity=".6"/>
-    <g fill="${FIG}">${bodies[g]}</g>
-    <path d="M91 49 l7 2 l-1 3 l-7 -2z M109 49 l-7 2 l1 3 l7 -2z" fill="#fff" opacity=".92"/>
-    <path d="M100 92 C96 100 92 104 92 109 a8 8 0 0 0 16 0 C108 104 104 100 100 92 Z" fill="${c}"/>
+    <g transform="translate(0 -13)">
+      <path d="${s.cape}" fill="${FIG}" opacity=".62"/>
+      ${s.extra ? `<path d="${s.extra}" fill="${HAIR}" transform="translate(0 13)"/>` : ''}
+      <path d="${s.body}" fill="${FIG}"/>
+      <path d="${s.neck}" fill="${FIG}"/>
+    </g>
+    <path d="${s.head}" fill="${FIG}"/>
+    <path d="${s.hair}" fill="${HAIR}"/>
+    <path d="M76 70 Q100 62 124 70 L123 83 Q100 77 77 83 Z" fill="${MASK}"/>
+    <path d="M84 75 l11 1.500 l-1 3.500 l-10 -2 Z M116 75 l-11 1.500 l1 3.500 l10 -2 Z" fill="#fff" opacity=".95"/>
+    <path d="M100 146 C95 155 90 160 90 166 a10 10 0 0 0 20 0 C110 160 105 155 100 146 Z" fill="${c}"/>
   </g>
 </svg>`;
   }
