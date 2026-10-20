@@ -75,6 +75,7 @@
     settings = must(await sb.from('club_settings').select('*').eq('id', 1).single());
     tiers = must(await sb.from('tiers').select('rank,name,color').order('rank'));
     $('a-brand').textContent = settings.club_name + ' admin';
+    $('a-legal').textContent = DC.legalText(settings) + ' ' + DC.versionText(settings) + '.';
     document.title = settings.club_name + ' admin';
   }
 
@@ -424,66 +425,100 @@
   /* =====================================================================
      BANNER
      ===================================================================== */
-  const bannerUrl = (path) => sb.storage.from('banners').getPublicUrl(path).data.publicUrl;
+  let bn = null;               // draft banner design being edited
+  let fresh = [];              // files uploaded in this editing session
+
+  const fileLabel = (path) => (path ? 'Uploaded' : 'None');
 
   async function loadBanners() {
     await loadMeta();
-    const rows = must(await sb.from('banners').select('*').order('created_at', { ascending: false }));
-    const active = rows.find((b) => b.id === settings.active_banner_id);
-    $('banner-current').innerHTML = active
-      ? `<img src="${esc(bannerUrl(active.path))}" alt="Current banner">`
-      : `<div class="banner-fallback">${esc(settings.club_name)}</div>`;
-    $('banner-clear').disabled = !active;
-    $('banner-gallery').innerHTML = rows.map((b) => `<div class="gitem" data-id="${esc(b.id)}" data-path="${esc(b.path)}">
-      <img src="${esc(bannerUrl(b.path))}" alt="Earlier banner" loading="lazy">
-      <div class="gb"><span class="muted hint" style="margin:0">${DC.fmtDate(b.created_at)}</span>
-      ${b.id === settings.active_banner_id ? '<span class="pill active">In use</span>'
-        : '<div class="actions"><button class="btn ghost" data-use>Use this</button><button class="btn danger" data-bdel>Delete</button></div>'}
-      </div></div>`).join('') || '<p class="hint">No banners uploaded yet.</p>';
+    await discardFresh();
+    const c = DC.bannerConfig(settings);
+    bn = { title: c.title, programme: c.programme, logo: c.logo || '', bg_mode: c.bg_mode === 'image' ? 'image' : 'color',
+           bg_color: /^#[0-9a-f]{6}$/i.test(c.bg_color) ? c.bg_color : '#5e0d1c', bg_image: c.bg_image || '', darken: Number(c.darken) || 0 };
+    $('b-title').value = bn.title; $('b-prog').value = bn.programme;
+    document.querySelector(`input[name=b-mode][value=${bn.bg_mode}]`).checked = true;
+    $('b-color').value = bn.bg_color; $('b-darken').value = bn.darken;
+    syncBanner();
+  }
+  function syncBanner() {
+    $('b-darken-val').textContent = bn.darken;
+    $('b-color-wrap').hidden = bn.bg_mode !== 'color';
+    $('b-image-wrap').hidden = bn.bg_mode !== 'image';
+    $('b-logo-name').textContent = fileLabel(bn.logo); $('b-logo-clear').disabled = !bn.logo;
+    $('b-image-name').textContent = fileLabel(bn.bg_image); $('b-image-clear').disabled = !bn.bg_image;
+    $('banner-preview').innerHTML = DC.bannerHTML({ ...settings, banner: bn });
+  }
+  async function discardFresh() {
+    if (fresh.length) { await sb.storage.from('banners').remove(fresh).catch(() => {}); fresh = []; }
   }
 
-  async function shrink(file) {
+  $('b-title').addEventListener('input', (e) => { bn.title = e.target.value; syncBanner(); });
+  $('b-prog').addEventListener('input', (e) => { bn.programme = e.target.value; syncBanner(); });
+  $('b-color').addEventListener('input', (e) => { bn.bg_color = e.target.value; syncBanner(); });
+  $('b-darken').addEventListener('input', (e) => { bn.darken = Number(e.target.value); syncBanner(); });
+  document.querySelectorAll('input[name=b-mode]').forEach((r) => r.addEventListener('change', () => { bn.bg_mode = r.value; syncBanner(); }));
+  $('b-logo-clear').addEventListener('click', () => { bn.logo = ''; syncBanner(); });
+  $('b-image-clear').addEventListener('click', () => { bn.bg_image = ''; syncBanner(); });
+
+  /* shrink an image in the browser: logos stay PNG (keeps transparency), backgrounds become JPEG */
+  async function shrink(file, maxSide, asPng) {
     const bmp = await createImageBitmap(file);
-    const W = Math.min(1600, bmp.width), H = Math.round(bmp.height * W / bmp.width);
-    const c = document.createElement('canvas'); c.width = W; c.height = H;
-    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.drawImage(bmp, 0, 0, W, H);
-    const toBlob = (q) => new Promise((res) => c.toBlob(res, 'image/jpeg', q));
-    let q = 0.88, blob = await toBlob(q);
-    while (blob.size > 1.8 * 1024 * 1024 && q > 0.45) { q -= 0.1; blob = await toBlob(q); }
-    return { blob, ratio: W / H };
+    let k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height)), q = 0.88, blob;
+    for (let i = 0; i < 8; i++) {
+      const W = Math.max(1, Math.round(bmp.width * k)), H = Math.max(1, Math.round(bmp.height * k));
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const g = c.getContext('2d');
+      if (!asPng) { g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); }
+      g.drawImage(bmp, 0, 0, W, H);
+      blob = await new Promise((res) => c.toBlob(res, asPng ? 'image/png' : 'image/jpeg', q));
+      if (blob.size <= 1.8 * 1024 * 1024) return blob;
+      if (!asPng && q > 0.5) q -= 0.1; else k *= 0.75;
+    }
+    return blob;
   }
-
-  $('banner-file').addEventListener('change', (e) => act(async () => {
-    const file = e.target.files[0]; e.target.value = '';
-    if (!file) return;
-    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return toast('Choose a JPG, PNG or WebP image.', true);
-    if (file.size > 20 * 1024 * 1024) return toast('That image is too large. Choose one under 20 MB.', true);
+  async function upload(file, kind) {
+    if (!file) return null;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { toast('Choose a JPG, PNG or WebP image.', true); return null; }
+    if (file.size > 20 * 1024 * 1024) { toast('That image is too large. Choose one under 20 MB.', true); return null; }
     toast('Uploading...');
-    const { blob, ratio } = await shrink(file);
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-    must(await sb.storage.from('banners').upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000' }));
-    const row = must(await sb.from('banners').insert({ path }).select().single());
-    must(await sb.from('club_settings').update({ active_banner_id: row.id }).eq('id', 1));
-    toast(ratio < 2 || ratio > 3.6 ? 'Banner is live. Its shape is far from 8:3, so the edges will be cropped.' : 'Banner is live.');
-    await loadBanners();
+    const png = kind === 'logo';
+    const blob = await shrink(file, png ? 600 : 1600, png);
+    const path = `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${png ? 'png' : 'jpg'}`;
+    must(await sb.storage.from('banners').upload(path, blob, { contentType: png ? 'image/png' : 'image/jpeg', cacheControl: '31536000' }));
+    fresh.push(path);
+    toast('Uploaded. Press Save banner to publish.');
+    return path;
+  }
+  $('b-logo-file').addEventListener('change', (e) => act(async () => {
+    const f = e.target.files[0]; e.target.value = '';
+    const p = await upload(f, 'logo'); if (p) { bn.logo = p; syncBanner(); }
   }));
-  $('banner-clear').addEventListener('click', () => act(async () => {
-    must(await sb.from('club_settings').update({ active_banner_id: null }).eq('id', 1));
-    toast('Showing the plain default banner.'); await loadBanners();
+  $('b-image-file').addEventListener('change', (e) => act(async () => {
+    const f = e.target.files[0]; e.target.value = '';
+    const p = await upload(f, 'bg'); if (p) { bn.bg_image = p; bn.bg_mode = 'image'; document.querySelector('input[name=b-mode][value=image]').checked = true; syncBanner(); }
   }));
-  $('banner-gallery').addEventListener('click', (e) => {
-    const item = e.target.closest('.gitem'); if (!item) return;
-    if (e.target.closest('[data-use]')) act(async () => {
-      must(await sb.from('club_settings').update({ active_banner_id: item.dataset.id }).eq('id', 1));
-      toast('Banner is live.'); await loadBanners();
-    });
-    if (e.target.closest('[data-bdel]')) act(async () => {
-      if (!window.confirm('Delete this banner for good?')) return;
-      await sb.storage.from('banners').remove([item.dataset.path]);
-      must(await sb.from('banners').delete().eq('id', item.dataset.id));
-      toast('Deleted.'); await loadBanners();
+
+  $('banner-form').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    act(async () => {
+      const out = { title: bn.title.trim(), programme: bn.programme.trim(), logo: bn.logo, bg_mode: bn.bg_mode,
+                    bg_color: bn.bg_color, bg_image: bn.bg_image, darken: bn.darken };
+      if (out.title.length > 80) return toast('The title can be at most 80 characters.', true);
+      if (out.programme.length > 120) return toast('The programme line can be at most 120 characters.', true);
+      if (out.bg_mode === 'image' && !out.bg_image) return toast('Upload a background image, or switch the background to Colour.', true);
+      const old = settings.banner || {};
+      must(await sb.from('club_settings').update({ banner: out }).eq('id', 1));
+      // tidy up: remove files that are no longer used
+      const used = [out.logo, out.bg_image];
+      const stale = [old.logo, old.bg_image, ...fresh].filter((p) => p && !used.includes(p));
+      if (stale.length) await sb.storage.from('banners').remove(stale).catch(() => {});
+      fresh = [];
+      toast('Banner saved.');
+      await loadBanners();
     });
   });
+  $('b-discard').addEventListener('click', () => act(async () => { await loadBanners(); toast('Changes discarded.'); }));
 
   /* =====================================================================
      SETTINGS
