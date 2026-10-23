@@ -29,6 +29,31 @@
   });
   $('pincode').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); });
 
+  /* ---------- card code: tidy as typed, check live once 6 characters are in ---------- */
+  const codeEl = $('code'), codeOk = $('code-ok');
+  let checkToken = 0;
+  const codeErr = (msg) => {
+    const f = codeEl.closest('[data-f]'), p = f.querySelector('.err');
+    p.hidden = !msg; p.textContent = msg || ''; f.classList.toggle('invalid', !!msg);
+    codeEl.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  };
+  codeEl.addEventListener('input', async () => {
+    const c = DC.cleanCode(codeEl.value);
+    codeEl.value = c;
+    codeOk.hidden = true; codeErr('');
+    const token = ++checkToken;
+    if (c.length !== 6) return;
+    if (!DC.CODE_RE.test(c)) { codeErr('That code has a character a card never uses (0, 1, I, L or O). Check it against your card.'); return; }
+    try {
+      const { data } = await DC.client().rpc('check_card', { p_code: c });
+      if (token !== checkToken) return;                       // typed on since: ignore this answer
+      if (data && data.ok) { codeOk.hidden = false; codeOk.textContent = 'Card accepted.'; }
+      else if (data) codeErr(data.message);
+    } catch (e) { console.error(e); /* the real check happens on submit */ }
+  });
+  const fromLink = new URLSearchParams(location.search).get('code');
+  if (fromLink) { codeEl.value = DC.cleanCode(fromLink); codeEl.dispatchEvent(new Event('input')); }
+
   /* ---------- validation (the database checks the same rules again) ---------- */
   const val = (name) => (form.querySelector(`input[name="${name}"]:checked`) || {}).value || '';
 
@@ -42,6 +67,7 @@
       pincode: $('pincode').value.trim(),
       ahalia: val('ahalia'),
       phone: $('phone').value.trim(),
+      code: DC.cleanCode(codeEl.value),
       consent: $('consent').checked
     };
   }
@@ -57,6 +83,8 @@
     if (!/^[1-9][0-9]{5}$/.test(v.pincode)) e.pincode = 'Enter a 6-digit pincode.';
     if (!v.ahalia) e.ahalia = 'Tell us whether you work at Ahalia.';
     if (!/^[6-9][0-9]{9}$/.test(v.phone)) e.phone = 'Enter a 10-digit mobile number, digits only.';
+    if (!v.code) e.code = 'Enter the 6-character code from your card.';
+    else if (!DC.CODE_RE.test(v.code)) e.code = 'The code is 6 characters, as printed on your card.';
     if (!v.consent) e.consent = 'Please tick the box to continue.';
     return e;
   }
@@ -79,6 +107,7 @@
 
   // clear a field's error as soon as the person edits it
   ['input', 'change'].forEach((evt) => form.addEventListener(evt, (e) => {
+    if (e.target.id === 'code') return;          // the code field manages its own messages (live check)
     const f = e.target.closest && e.target.closest('[data-f]');
     if (!f) return;
     const p = f.querySelector('.err');
@@ -110,12 +139,12 @@
       const { data, error } = await DC.client().rpc('register_donation', {
         p_name: v.name, p_dob: v.dob, p_gender: v.gender, p_blood_group: v.bg,
         p_village: v.village, p_pincode: v.pincode, p_ahalia: v.ahalia === 'yes',
-        p_phone: v.phone, p_consent: v.consent
+        p_phone: v.phone, p_consent: v.consent, p_code: v.code
       });
       if (error) throw error;
       if (!data || !data.ok) {
         const code = data && data.code;
-        const map = { phone: 'phone', name: 'name', dob: 'dob', gender: 'gender', blood_group: 'blood_group', village: 'village', pincode: 'pincode', ahalia: 'ahalia', consent: 'consent' };
+        const map = { phone: 'phone', name: 'name', dob: 'dob', gender: 'gender', blood_group: 'blood_group', village: 'village', pincode: 'pincode', ahalia: 'ahalia', consent: 'consent', card: 'code', busy: 'code' };
         if (map[code]) showErrors({ [map[code]]: data.message });
         else formAlert((data && data.message) || 'Something went wrong. Please try again.');
         return;
@@ -131,7 +160,7 @@
   });
 
   function done(v, res) {
-    DC.store.set(v.phone, v.dob);
+    DC.store.set(v.phone, v.code, 'code');
     const p = res.profile;
     const first = v.name.split(' ')[0];
     const medal = $('medal');
