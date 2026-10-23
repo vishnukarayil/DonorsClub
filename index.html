@@ -113,6 +113,17 @@
         </div>
       </fieldset>
 
+      <fieldset>
+        <legend>Your donor card</legend>
+        <div class="field" data-f="code">
+          <label class="lbl" for="code">Card code</label>
+          <input id="code" name="code" type="text" class="codeinput" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="6 characters" required aria-describedby="code-hint">
+          <p class="err" hidden></p>
+          <p class="ok" id="code-ok" hidden></p>
+          <p class="hint" id="code-hint">The 6-character code printed on the card the blood centre gave you. Each card can be used once.</p>
+        </div>
+      </fieldset>
+
       <div class="hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
 
       <label class="consent" data-f="consent">
@@ -131,7 +142,7 @@
       <p id="done-text"></p>
       <div id="done-flag" class="alert info" hidden></div>
       <a class="btn primary block" href="profile.html">Open my profile</a>
-      <p class="hint">Keep using the same mobile number when you donate again.</p>
+      <p class="hint">Keep using the same mobile number when you donate again. Open your profile with your mobile number and any of your card codes.</p>
     </section>
   </div></main>
 
