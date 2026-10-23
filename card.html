@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <title>Check a donor card</title>
+  <meta name="theme-color" content="#5e0d1c">
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="wrap">
+    <span class="brand" id="brand">Donors' Club</span>
+    <a class="nav" href="index.html">Log a donation</a>
+  </div></div>
+
+  <main><div class="wrap">
+    <div id="app-error" class="alert bad" role="alert" hidden></div>
+    <p id="loading" class="center hint" style="margin-top:40px">Checking the card...</p>
+
+    <section id="result" class="sheet vcard" hidden aria-live="polite"></section>
+
+    <form id="manual" class="sheet" novalidate hidden>
+      <h2 style="font-size:1.2rem;font-weight:800">Check another card</h2>
+      <div class="field">
+        <label class="lbl" for="m-code">Card code</label>
+        <input id="m-code" type="text" class="codeinput" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="6 characters">
+      </div>
+      <button class="btn primary" type="submit">Check</button>
+    </form>
+  </div></main>
+
+  <div id="footer"></div>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/card.js"></script>
+</body>
+</html>
