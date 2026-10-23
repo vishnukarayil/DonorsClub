@@ -35,6 +35,7 @@
         <nav class="tabs" role="tablist" aria-label="Sections">
           <button role="tab" data-tab="donors" aria-selected="true">Donors</button>
           <button role="tab" data-tab="review" aria-selected="false">Review <span class="badge" id="review-badge" hidden>0</span></button>
+          <button role="tab" data-tab="cards" aria-selected="false">Cards</button>
           <button role="tab" data-tab="tiers" aria-selected="false">Tiers</button>
           <button role="tab" data-tab="benefits" aria-selected="false">Benefits</button>
           <button role="tab" data-tab="banner" aria-selected="false">Banner</button>
@@ -82,6 +83,33 @@
         <p class="hint">Deleted entries no longer count towards any tier and are hidden from the Donors tab. You can restore them, or remove them from the database for good.</p>
         <div id="rejected-list" class="cards"></div>
         <p><button class="btn danger small" id="purge" type="button" hidden>Permanently remove all deleted entries</button></p>
+      </section>
+
+      <!-- CARDS -->
+      <section id="tab-cards" role="tabpanel" hidden>
+        <h2>Donor cards</h2>
+        <p class="hint">Each card carries a unique 6-character code and a QR. A donor types the code on the donation form; it can be used once. Generate a batch, print it, then press <b>Activate</b> when the cards are in your hands. Cards that are not activated cannot be used.</p>
+
+        <form id="card-gen" class="newrow" novalidate>
+          <label class="lbl" for="cg-count" style="margin:0">New batch of</label>
+          <input id="cg-count" type="number" min="1" max="1000" value="50" style="width:96px" aria-label="Number of cards">
+          <input id="cg-label" type="text" maxlength="60" placeholder="Label, e.g. Box 1, October" aria-label="Batch label">
+          <button class="btn primary inline" type="submit">Generate cards</button>
+        </form>
+
+        <div class="tablewrap">
+          <table class="small-table">
+            <thead><tr><th>Batch</th><th>Created</th><th>Total</th><th>In stock</th><th>Ready to use</th><th>Used</th><th>Void</th><th></th></tr></thead>
+            <tbody id="batch-body"><tr><td colspan="8" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+
+        <h3 style="margin-top:28px">Find a card</h3>
+        <form id="card-find" class="newrow" novalidate>
+          <input id="cf-code" type="text" class="codeinput" maxlength="9" placeholder="6 characters" aria-label="Card code" autocomplete="off" style="max-width:200px">
+          <button class="btn ghost inline" type="submit">Look up</button>
+        </form>
+        <div id="card-found"></div>
       </section>
 
       <!-- TIERS -->
@@ -165,6 +193,11 @@
           <div class="field"><label class="lbl" for="s-valid">Benefit validity after each donation (days)</label><input id="s-valid" type="number" min="1" max="3650"></div>
           <div class="field"><label class="lbl" for="s-gap">Minimum days between two logged donations</label><input id="s-gap" type="number" min="0" max="365">
             <p class="hint">A repeat entry inside this window is refused as a duplicate. Set 0 to switch the check off.</p></div>
+          <div class="field"><label class="lbl" for="s-base">Web address printed in card QR codes</label><input id="s-base" type="url" maxlength="200" placeholder="https://yourname.github.io/donors-club">
+            <p class="hint">The folder that holds card.html, starting with https://. Leave empty to use this site's address. Set it <b>before printing</b> if you plan to move to your own domain, because printed QR codes keep the address they were made with.</p></div>
+          <div class="field"><span class="lbl">Date-of-birth login</span>
+            <label class="check" style="display:flex;gap:8px;align-items:center;font-weight:600"><input id="s-dob" type="checkbox" style="width:20px;height:20px;min-height:0;accent-color:var(--red)"> Let donors with no card open their profile with mobile number and date of birth</label>
+            <p class="hint">Switch this off once every donor has a card. Donors who hold a card always log in with the card code.</p></div>
           <div class="field wide"><label class="lbl" for="s-disc">Disclaimer shown on profiles</label><textarea id="s-disc" rows="2" maxlength="400"></textarea></div>
           <div class="wide"><button class="btn primary inline" type="submit">Save settings</button></div>
         </form>
@@ -177,7 +210,7 @@
   <dialog id="don-dlg" class="wide-dlg">
     <h2 id="don-title">Donations</h2>
     <p class="hint" id="don-sub"></p>
-    <div class="tablewrap"><table class="small-table"><thead><tr><th>Date and time (IST)</th><th>Status</th><th>Added</th><th></th></tr></thead><tbody id="don-body"></tbody></table></div>
+    <div class="tablewrap"><table class="small-table"><thead><tr><th>Date and time (IST)</th><th>Status</th><th>Added</th><th>Card</th><th></th></tr></thead><tbody id="don-body"></tbody></table></div>
     <form id="don-add" class="newrow" novalidate>
       <label class="lbl" for="don-new" style="margin:0">Add a donation</label>
       <input id="don-new" type="datetime-local" required>
@@ -186,7 +219,11 @@
     <form method="dialog"><button class="btn ghost inline">Close</button></form>
   </dialog>
 
+  <!-- printable sheet of cards: only visible when printing -->
+  <div id="print-area" aria-hidden="true"></div>
+
   <script src="js/supabase.js"></script>
+  <script src="js/qrcode.js"></script>
   <script src="js/config.js"></script>
   <script src="js/common.js"></script>
   <script src="js/admin.js"></script>
