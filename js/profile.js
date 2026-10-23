@@ -14,11 +14,27 @@
     e.target.value = d.slice(0, 10);
   });
 
-  async function fetchProfile(phone, dob) {
-    const { data, error } = await DC.client().rpc('get_profile', { p_phone: phone, p_dob: dob });
+  /* kind 'code': phone + any card code.  kind 'dob': old way, only for donors who have no card yet. */
+  async function fetchProfile(phone, cred, kind) {
+    const { data, error } = kind === 'dob'
+      ? await DC.client().rpc('get_profile', { p_phone: phone, p_dob: cred })
+      : await DC.client().rpc('get_profile_by_code', { p_phone: phone, p_code: cred });
     if (error) throw error;
-    return data;           // null when there is no match
+    return data;           // null when there is no match; {locked:true} when too many wrong tries
   }
+
+  let mode = 'code';
+  function setMode(m) {
+    mode = m;
+    $('l-code-wrap').hidden = m !== 'code';
+    $('l-dob-wrap').hidden = m !== 'dob';
+    $('l-intro').textContent = m === 'code'
+      ? 'Enter the mobile number you used when you donated, and the 6-character code from any of your donor cards.'
+      : 'Enter the mobile number you used when you donated, and your date of birth. This works only until you receive your first donor card.';
+    $('l-switch').textContent = m === 'code' ? 'I have no card yet: use my date of birth' : 'I have a card: use my card code';
+  }
+  $('l-switch').addEventListener('click', () => setMode(mode === 'code' ? 'dob' : 'code'));
+  $('l-code').addEventListener('input', (e) => { e.target.value = DC.cleanCode(e.target.value); });
 
   function showLookup(msg) {
     $('loading').hidden = true;
@@ -121,16 +137,24 @@
   $('lookup').addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const phone = $('l-phone').value.trim();
-    const dob = $('l-dob').value;
+    const cred = mode === 'code' ? DC.cleanCode($('l-code').value) : $('l-dob').value;
     const alertEl = $('lookup-alert');
     alertEl.hidden = true;
-    if (!/^[6-9][0-9]{9}$/.test(phone)) { alertEl.hidden = false; alertEl.textContent = 'Enter the 10-digit mobile number you used when you donated.'; return; }
-    if (!dob) { alertEl.hidden = false; alertEl.textContent = 'Enter your date of birth.'; return; }
+    const bad = (m) => { alertEl.hidden = false; alertEl.textContent = m; };
+    if (!/^[6-9][0-9]{9}$/.test(phone)) return bad('Enter the 10-digit mobile number you used when you donated.');
+    if (mode === 'code' && !DC.CODE_RE.test(cred)) return bad('Enter the 6-character code printed on your card.');
+    if (mode === 'dob' && !cred) return bad('Enter your date of birth.');
     const btn = $('lookup-btn'); btn.disabled = true; btn.textContent = 'Checking...';
     try {
-      const p = await fetchProfile(phone, dob);
-      if (!p) { showLookup('We could not find a profile for that number and date of birth. Check both, and use the same number you gave when you donated.'); return; }
-      DC.store.set(phone, dob);
+      const p = await fetchProfile(phone, cred, mode);
+      if (p && p.locked) { showLookup('Too many wrong tries. Please wait 15 minutes and try again, or use your card code.'); return; }
+      if (!p) {
+        showLookup(mode === 'code'
+          ? 'We could not find a profile for that number and card code. Check both, and use the same number you gave when you donated.'
+          : 'We could not find a profile for that number and date of birth. If you have received a donor card, use its code instead.');
+        return;
+      }
+      DC.store.set(phone, cred, mode);
       render(p);
     } catch (e) {
       console.error(e);
@@ -144,15 +168,17 @@
       club = await DC.loadClub();
       $('brand').textContent = club.settings.club_name;
       $('footer').innerHTML = DC.footerHTML(club);
+      $('l-switch').hidden = !club.settings.allow_dob_login;      // date-of-birth login can be switched off by the admin
     } catch (e) {
       console.error(e);
       DC.fail('Could not load the latest club details.');
     }
     const saved = DC.store.get();
-    if (saved.phone && saved.dob) {
+    if (saved.phone && saved.cred) {
       try {
-        const p = await fetchProfile(saved.phone, saved.dob);
-        if (p) { render(p); return; }
+        const p = await fetchProfile(saved.phone, saved.cred, saved.kind === 'dob' ? 'dob' : 'code');
+        if (p && !p.locked) { render(p); return; }
+        if (p && p.locked) { showLookup(); return; }
         DC.store.clear();
       } catch (e) {
         console.error(e);
