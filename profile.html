@@ -30,7 +30,7 @@
 
     <form id="lookup" class="sheet" novalidate hidden>
       <h1 style="font-size:1.6rem;font-weight:800">Open your profile</h1>
-      <p class="hint" style="margin:6px 0 16px">Enter the mobile number you used when you donated, and your date of birth.</p>
+      <p class="hint" id="l-intro" style="margin:6px 0 16px">Enter the mobile number you used when you donated, and the 6-character code from any of your donor cards.</p>
       <div class="field">
         <label class="lbl" for="l-phone">Mobile number</label>
         <div class="phone">
@@ -38,12 +38,18 @@
           <input id="l-phone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="10 digits" required>
         </div>
       </div>
-      <div class="field">
+      <div class="field" id="l-code-wrap">
+        <label class="lbl" for="l-code">Card code</label>
+        <input id="l-code" type="text" class="codeinput" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="6 characters">
+        <p class="hint">Your old and new cards all work.</p>
+      </div>
+      <div class="field" id="l-dob-wrap" hidden>
         <label class="lbl" for="l-dob">Date of birth</label>
-        <input id="l-dob" type="date" autocomplete="bday" required>
+        <input id="l-dob" type="date" autocomplete="bday">
       </div>
       <div id="lookup-alert" class="alert bad" role="alert" hidden></div>
       <button class="btn primary" id="lookup-btn" type="submit">Open my profile</button>
+      <p class="center" style="margin:10px 0 0"><button class="linkbtn" id="l-switch" type="button" hidden>I have no card yet: use my date of birth</button></p>
     </form>
 
     <div id="profile" hidden></div>
