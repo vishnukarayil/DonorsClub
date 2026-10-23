@@ -88,7 +88,7 @@
   }
 
   /* ---------- tabs ---------- */
-  const loaders = { donors: loadDonors, review: loadReview, tiers: loadTiers, benefits: loadBenefits, banner: loadBanners, settings: loadSettingsForm };
+  const loaders = { donors: loadDonors, review: loadReview, cards: loadCards, tiers: loadTiers, benefits: loadBenefits, banner: loadBanners, settings: loadSettingsForm };
   function openTab(name) {
     document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
     document.querySelectorAll('[role=tabpanel]').forEach((p) => { p.hidden = p.id !== 'tab-' + name; });
@@ -247,6 +247,8 @@
   }
   async function loadDonations() {
     const rows = must(await sb.from('donations').select('*').eq('donor_id', curDonor).order('donated_at', { ascending: false }));
+    const cardOf = {};
+    must(await sb.from('cards').select('code,donation_id').eq('donor_id', curDonor)).forEach((c) => { if (c.donation_id) cardOf[c.donation_id] = c.code; });
     $('don-body').innerHTML = rows.map((d) => {
       const acts = d.status === 'rejected'
         ? '<button class="btn ghost" data-act="restore">Restore</button>'
@@ -257,8 +259,9 @@
         <td><input type="datetime-local" data-k="dt" value="${istLocal(d.donated_at)}" ${d.status === 'rejected' ? 'disabled' : ''} aria-label="Donation date and time"></td>
         <td><span class="pill ${esc(d.status)}">${statusLabel[d.status]}</span>${d.flag_reason ? `<div class="hint">${esc(d.flag_reason)}</div>` : ''}</td>
         <td>${d.source === 'admin' ? 'By staff' : 'Web form'}</td>
+        <td class="mono">${esc(cardOf[d.id] || '')}</td>
         <td class="actions">${acts}</td></tr>`;
-    }).join('') || '<tr><td colspan="4" class="empty">No donations.</td></tr>';
+    }).join('') || '<tr><td colspan="5" class="empty">No donations.</td></tr>';
   }
   $('don-body').addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]'); if (!b) return;
@@ -277,6 +280,7 @@
       } else if (a === 'delete') {
         if (!window.confirm('Delete this entry? It will stop counting towards the donor’s tier. You can restore it later from the Review tab.')) return;
         must(await sb.from('donations').update({ status: 'rejected' }).eq('id', id));
+        await offerFreeCard(id);
       }
       toast('Updated.');
       await loadDonations(); await loadDonors(); await refreshBadge();
@@ -291,6 +295,16 @@
       await loadDonations(); await loadDonors();
     });
   });
+
+  /* a deleted entry leaves its card used up; offer to give the card back to its holder */
+  async function offerFreeCard(donationId) {
+    const c = must(await sb.from('cards').select('code').eq('donation_id', donationId).maybeSingle());
+    if (!c) return;
+    if (window.confirm(`This entry was made with card ${c.code}. Make the card usable again?\n\nChoose OK if the card is genuine and its holder simply made a mistake. Choose Cancel if the card was misused: it then stays blocked.`)) {
+      must(await sb.rpc('admin_free_card_for_donation', { p_donation: donationId }));
+      toast(`Card ${c.code} can be used again.`);
+    }
+  }
 
   /* =====================================================================
      REVIEW
@@ -333,6 +347,7 @@
       if (b.dataset.act === 'delete') {
         if (!window.confirm('Delete this entry? It will stop counting towards the donor’s tier.')) return;
         must(await sb.from('donations').update({ status: 'rejected' }).eq('id', id));
+        await offerFreeCard(id);
       } else {
         must(await sb.from('donations').update({ status: 'active' }).eq('id', id));
       }
@@ -345,6 +360,153 @@
     toast(`Removed ${r.donations} entries and ${r.donors} donors.`);
     await loadReview();
   }));
+
+
+  /* =====================================================================
+     CARDS
+     ===================================================================== */
+  const CODE = DC.CODE_RE;
+  const stamp = (iso) => DC.fmtDate(iso);
+
+  async function loadCards() {
+    await loadMeta();
+    const rows = must(await sb.from('card_batch_summary').select('*').order('created_at', { ascending: false }));
+    $('batch-body').innerHTML = rows.map((b) => {
+      const active = !!b.activated_at;
+      return `<tr data-id="${esc(b.id)}" data-label="${esc(b.label || '')}">
+        <td><b>${esc(b.label || 'Untitled batch')}</b>${active ? '' : ' <span class="pill flagged">not activated</span>'}</td>
+        <td class="nowrap">${stamp(b.created_at)}</td>
+        <td class="num">${b.total}</td><td class="num">${b.stock}</td><td class="num">${b.issued}</td><td class="num">${b.claimed}</td><td class="num">${b.void}</td>
+        <td class="actions">
+          ${active ? '' : '<button class="btn primary" data-bact="activate">Activate</button>'}
+          <button class="btn ghost" data-bact="print">Print sheet</button>
+          <button class="btn ghost" data-bact="csv">CSV</button>
+          <button class="btn danger" data-bact="delete" ${b.claimed ? 'disabled title="Cards from this batch have been used"' : ''}>Delete</button>
+        </td></tr>`;
+    }).join('') || '<tr><td colspan="8" class="empty">No cards yet. Generate your first batch above.</td></tr>';
+  }
+
+  $('card-gen').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    act(async () => {
+      const n = Number($('cg-count').value);
+      if (!Number.isInteger(n) || n < 1 || n > 1000) return toast('Choose between 1 and 1000 cards.', true);
+      const r = must(await sb.rpc('admin_generate_cards', { p_count: n, p_label: $('cg-label').value.trim() || null }));
+      $('cg-label').value = '';
+      toast(`${r.count} cards generated. Print them, then press Activate.`);
+      await loadCards();
+    });
+  });
+
+  async function batchCards(id) {
+    const out = []; let from = 0;
+    for (;;) {
+      const r = must(await sb.from('cards').select('code,status').eq('batch_id', id).neq('status', 'void').order('code').range(from, from + 999));
+      out.push(...r); if (r.length < 1000) break; from += 1000;
+    }
+    return out;
+  }
+
+  $('batch-body').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-bact]'); if (!b) return;
+    const tr = b.closest('tr'), id = tr.dataset.id, label = tr.dataset.label || 'this batch';
+    act(async () => {
+      const a = b.dataset.bact;
+      if (a === 'activate') {
+        if (!window.confirm(`Activate "${label}"? Every card in it becomes usable on the donation form. Do this only when the printed cards are in your hands.`)) return;
+        const r = must(await sb.rpc('admin_activate_batch', { p_batch: id }));
+        toast(`${r.activated} cards are now ready to use.`);
+        await loadCards();
+      } else if (a === 'delete') {
+        if (!window.confirm(`Delete "${label}" and all its unused cards? Printed cards from it will stop working.`)) return;
+        must(await sb.from('card_batches').delete().eq('id', id));
+        toast('Batch deleted.'); await loadCards();
+      } else if (a === 'csv') {
+        const cards = await batchCards(id);
+        const lines = ['code,url', ...cards.map((c) => `${c.code},${DC.cardUrl(settings, c.code)}`)];
+        const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+        const el = document.createElement('a');
+        el.href = URL.createObjectURL(blob); el.download = 'cards-' + label.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase() + '.csv';
+        document.body.appendChild(el); el.click(); el.remove(); setTimeout(() => URL.revokeObjectURL(el.href), 2000);
+      } else if (a === 'print') {
+        const cards = await batchCards(id);
+        if (!cards.length) return toast('This batch has no printable cards.', true);
+        printCards(cards.map((c) => c.code));
+      }
+    });
+  });
+
+  /* ---------- printable card sheet: 10 cards of 85.6 x 54 mm per A4 page ---------- */
+  function qrSvg(text) {
+    const q = qrcode(0, 'M'); q.addData(text); q.make();
+    return q.createSvgTag({ scalable: true, margin: 0 });
+  }
+  function cardFace(code) {
+    const c = DC.bannerConfig(settings);
+    const bg = /^#[0-9a-f]{6}$/i.test(c.bg_color) ? c.bg_color : '#5e0d1c';
+    const ink = DC.inkOn(bg);
+    const logo = /^[A-Za-z0-9._-]{1,120}$/.test(c.logo || '') ? `${String(DC.cfg.SUPABASE_URL).replace(/\/+$/, '')}/storage/v1/object/public/banners/${c.logo}` : '';
+    const shown = code.slice(0, 3) + ' ' + code.slice(3);
+    return `<div class="pcard-face" style="--cbg:${bg};--cink:${ink}">
+      <div class="pc-top">${logo ? `<img src="${esc(logo)}" alt="">` : ''}<div><b>${esc(settings.club_name)}</b><span>Donor card</span></div></div>
+      <div class="pc-mid">
+        <div class="pc-code"><small>Card code</small><strong>${esc(shown)}</strong></div>
+        <div class="pc-qr">${qrSvg(DC.cardUrl(settings, code))}</div>
+      </div>
+      <div class="pc-foot">${esc(settings.center_name)} &middot; Licence ${esc(settings.license_no)}<br>${esc(settings.enquiry_phone)} &middot; Benefits valid ${settings.validity_days} days from each donation</div>
+    </div>`;
+  }
+  function printCards(codes) {
+    const pages = [];
+    for (let i = 0; i < codes.length; i += 10) pages.push(`<div class="pc-page">${codes.slice(i, i + 10).map(cardFace).join('')}</div>`);
+    const area = $('print-area');
+    area.innerHTML = pages.join('');
+    const imgs = [...area.querySelectorAll('img')];
+    Promise.all(imgs.map((im) => (im.complete ? 0 : new Promise((r) => { im.onload = im.onerror = r; })))).then(() => {
+      document.body.classList.add('printing');
+      const done = () => { document.body.classList.remove('printing'); area.innerHTML = ''; window.removeEventListener('afterprint', done); };
+      window.addEventListener('afterprint', done);
+      window.print();
+    });
+  }
+
+  /* ---------- look up one card ---------- */
+  $('cf-code').addEventListener('input', (e) => { e.target.value = DC.cleanCode(e.target.value); });
+  $('card-find').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    act(async () => {
+      const code = DC.cleanCode($('cf-code').value);
+      const out = $('card-found');
+      if (!CODE.test(code)) { out.innerHTML = '<p class="hint">Enter the 6-character code.</p>'; return; }
+      const c = must(await sb.from('cards').select('code,status,claimed_at,expires_at,batch:card_batches(label),donor:donors(name,phone)').eq('code', code).maybeSingle());
+      if (!c) { out.innerHTML = `<p class="hint">No card <span class="mono">${esc(code)}</span> exists.</p>`; return; }
+      const names = { stock: 'In stock (batch not activated)', issued: 'Ready to use, not used yet', claimed: 'Used', void: 'Void' };
+      out.innerHTML = `<article class="rcard" data-code="${esc(c.code)}" style="max-width:420px">
+        <h4 class="mono">${esc(c.code)}</h4>
+        <dl><dt>Status</dt><dd>${esc(names[c.status])}</dd>
+        <dt>Batch</dt><dd>${esc((c.batch && c.batch.label) || '')}</dd>
+        ${c.status === 'claimed' && c.donor ? `<dt>Donor</dt><dd>${esc(c.donor.name)}, ${esc(c.donor.phone)}</dd>
+        <dt>Registered</dt><dd>${stamp(c.claimed_at)}</dd><dt>Expires</dt><dd>${stamp(c.expires_at)}</dd>` : ''}</dl>
+        <div class="actions">
+          ${c.status === 'issued' || c.status === 'stock' ? '<button class="btn danger" data-cact="void">Mark as lost / void</button>' : ''}
+          ${c.status === 'claimed' ? '<button class="btn ghost" data-cact="free">Release card for reuse</button>' : ''}
+        </div></article>`;
+    });
+  });
+  $('card-found').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-cact]'); if (!b) return;
+    const code = b.closest('.rcard').dataset.code;
+    act(async () => {
+      if (b.dataset.cact === 'void') {
+        if (!window.confirm(`Void card ${code}? It can never be used.`)) return;
+        must(await sb.from('cards').update({ status: 'void' }).eq('code', code));
+      } else {
+        if (!window.confirm(`Release card ${code}? The card becomes unused and can be registered again. The donation it was used for stays on the donor's record: delete that entry from the Donors tab if it should not count.`)) return;
+        must(await sb.rpc('admin_free_card', { p_code: code }));
+      }
+      toast('Done.'); $('card-find').requestSubmit(); await loadCards(); await refreshBadge();
+    });
+  });
 
   /* =====================================================================
      TIERS
@@ -527,6 +689,8 @@
   async function loadSettingsForm() {
     await loadMeta();
     Object.entries(sf).forEach(([k, id]) => { $(id).value = settings[k] ?? ''; });
+    $('s-base').value = settings.card_base_url || '';
+    $('s-dob').checked = settings.allow_dob_login !== false;
   }
   $('settings-form').addEventListener('submit', (ev) => {
     ev.preventDefault();
@@ -534,6 +698,9 @@
       const v = {};
       Object.entries(sf).forEach(([k, id]) => { v[k] = $(id).value.trim(); });
       v.validity_days = Number(v.validity_days); v.min_gap_days = Number(v.min_gap_days);
+      v.card_base_url = $('s-base').value.trim().replace(/\/+$/, '');
+      v.allow_dob_login = $('s-dob').checked;
+      if (v.card_base_url && !/^https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?(\/[A-Za-z0-9._~\/-]*)?$/.test(v.card_base_url)) return toast('The card web address must start with https:// and contain no spaces.', true);
       if (!v.club_name || !v.center_name) return toast('Club name and blood centre name are required.', true);
       if (!Number.isInteger(v.validity_days) || v.validity_days < 1 || v.validity_days > 3650) return toast('Validity must be between 1 and 3650 days.', true);
       if (!Number.isInteger(v.min_gap_days) || v.min_gap_days < 0 || v.min_gap_days > 365) return toast('The minimum gap must be between 0 and 365 days.', true);
