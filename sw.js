@@ -1,8 +1,8 @@
 /* Minimal service worker: makes the site installable and lets the app shell
    open instantly. It never caches database calls or the admin console. */
-const CACHE = 'donors-club-v2';
-const SHELL = ['./', 'index.html', 'profile.html', 'css/style.css', 'js/common.js', 'js/avatars.js',
-               'js/register.js', 'js/profile.js', 'js/supabase.js', 'js/config.js',
+const CACHE = 'donors-club-v3';
+const SHELL = ['./', 'index.html', 'profile.html', 'card.html', 'css/style.css', 'js/common.js', 'js/avatars.js',
+               'js/register.js', 'js/profile.js', 'js/card.js', 'js/supabase.js', 'js/config.js',
                'icons/icon-192.png', 'icons/icon-512.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
