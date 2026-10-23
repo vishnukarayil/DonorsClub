@@ -52,7 +52,18 @@ window.DC = (function () {
   }
 
   /* ---------- club content (settings, tiers, benefits) ---------- */
-  const VERSION = '1.1.0';
+  const VERSION = '1.2.0';
+
+  /* ---------- card codes ---------- */
+  const CODE_RE = /^[A-HJKMNP-Z2-9]{6}$/;
+  /* what people type: upper case, no spaces or dashes, at most 6 characters */
+  const cleanCode = (v) => String(v || '').toUpperCase().replace(/[\s-]+/g, '').slice(0, 6);
+  /* the address printed in each card's QR: <base>/card.html?c=CODE */
+  function cardUrl(settings, code) {
+    let base = settings && settings.card_base_url ? String(settings.card_base_url).replace(/\/+$/, '') : '';
+    if (!base) base = location.href.replace(/[?#].*$/, '').replace(/\/[^/]*$/, '');
+    return `${base}/card.html?c=${encodeURIComponent(code)}`;
+  }
 
   async function loadClub() {
     const sb = client();
@@ -155,10 +166,22 @@ window.DC = (function () {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
 
+  /* remembered login on this device: phone + credential, where kind is 'code' (card code) or 'dob' (old way) */
+  const store = {
+    get: () => {
+      try {
+        const phone = localStorage.getItem('dc.phone');
+        const cred = localStorage.getItem('dc.cred') || localStorage.getItem('dc.dob');   // dc.dob: saved by version 1.1
+        const kind = localStorage.getItem('dc.kind') || (localStorage.getItem('dc.dob') ? 'dob' : '');
+        return { phone, cred, kind };
+      } catch (_) { return {}; }
+    },
+    set: (phone, cred, kind) => {
+      try { localStorage.setItem('dc.phone', phone); localStorage.setItem('dc.cred', cred); localStorage.setItem('dc.kind', kind); localStorage.removeItem('dc.dob'); } catch (_) { /* private mode */ }
+    },
+    clear: () => { try { ['dc.phone', 'dc.cred', 'dc.kind', 'dc.dob'].forEach((k) => localStorage.removeItem(k)); } catch (_) { /* ignore */ } }
+  };
+
   return { cfg, configured, client, esc, fmtDate, fmtDateTime, icons, inkOn, loadClub, bannerConfig, bannerHTML, footerHTML, legalText, versionText, VERSION, setupNotice, fail, initInstall,
-           store: {
-             get: () => { try { return { phone: localStorage.getItem('dc.phone'), dob: localStorage.getItem('dc.dob') }; } catch (_) { return {}; } },
-             set: (phone, dob) => { try { localStorage.setItem('dc.phone', phone); localStorage.setItem('dc.dob', dob); } catch (_) { /* private mode */ } },
-             clear: () => { try { localStorage.removeItem('dc.phone'); localStorage.removeItem('dc.dob'); } catch (_) { /* ignore */ } }
-           } };
+           CODE_RE, cleanCode, cardUrl, store };
 })();
