@@ -254,3 +254,27 @@ dialog li { margin: 6px 0; }
 @media (prefers-reduced-motion: reduce) {
   .bar > i { transition: none; }
 }
+
+/* ---------- v1.2: card code field and card check page ---------- */
+.codeinput { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 1.25rem; font-weight: 700; letter-spacing: .28em; text-transform: uppercase; }
+.codeinput::placeholder { letter-spacing: .04em; font-weight: 400; font-size: 1rem; text-transform: none; }
+.field .ok { color: var(--ok); font-weight: 600; font-size: .9rem; margin: 6px 0 0; }
+.mono { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: .12em; }
+
+.vcard { text-align: center; padding: 26px 18px 22px; border-top: 6px solid var(--mist); }
+.vcard.is-valid { border-top-color: var(--ok); }
+.vcard.is-expired { border-top-color: var(--warn); }
+.vcard.is-none { border-top-color: var(--red); }
+.vstate { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.15rem; }
+.vstate svg { width: 22px; height: 22px; }
+.vstate.ok { color: var(--ok); }
+.vstate.old { color: var(--warn); }
+.vstate.bad { color: var(--red-deep); }
+.vname { font-family: var(--display); font-size: 1.9rem; font-weight: 800; margin: 14px 0 8px; }
+.vcard .tierpill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px; font-weight: 700; background: var(--tier); color: var(--tier-ink); }
+.vcard .tierpill svg { width: 16px; height: 16px; }
+.vdl { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; text-align: left; max-width: 340px; margin: 20px auto 6px; padding-top: 16px; border-top: 1px solid var(--mist); }
+.vdl dt { color: var(--slate); }
+.vdl dd { margin: 0; font-weight: 700; text-align: right; }
+.vcard p { color: var(--slate); max-width: 42ch; margin: 12px auto 0; }
+#manual { margin-top: 16px; }
