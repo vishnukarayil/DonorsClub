@@ -114,3 +114,32 @@ td.empty { text-align: center; padding: 30px; color: var(--slate); }
 #banner-form input[type=color] { width: 64px; min-height: 44px; padding: 2px; border-radius: 8px; cursor: pointer; }
 #banner-form input[type=range] { width: 100%; max-width: 300px; min-height: 0; padding: 0; accent-color: var(--red); }
 .legal-admin { margin: 40px 0 0; font-size: .8rem; color: var(--slate); text-align: center; }
+
+/* ---------- printable donor cards ---------- */
+#print-area { display: none; }
+.pcard-face {
+  box-sizing: border-box; width: 85.6mm; height: 54mm; padding: 4mm 4.5mm 3.2mm; border-radius: 3.5mm; overflow: hidden;
+  background: var(--cbg); color: var(--cink); display: flex; flex-direction: column; justify-content: space-between;
+  font-family: "Figtree", "Segoe UI", system-ui, sans-serif; break-inside: avoid;
+}
+.pc-top { display: flex; align-items: center; gap: 2.5mm; min-height: 9mm; }
+.pc-top img { height: 9mm; width: auto; max-width: 18mm; object-fit: contain; }
+.pc-top b { display: block; font-size: 11pt; line-height: 1.1; font-family: "Bricolage Grotesque", "Segoe UI", sans-serif; }
+.pc-top span { display: block; font-size: 6.5pt; letter-spacing: .14em; text-transform: uppercase; opacity: .8; margin-top: .6mm; }
+.pc-mid { display: flex; align-items: center; justify-content: space-between; gap: 3mm; }
+.pc-code small { display: block; font-size: 6pt; letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+.pc-code strong { display: block; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 19pt; letter-spacing: .12em; line-height: 1.15; white-space: nowrap; }
+.pc-qr { width: 21mm; height: 21mm; padding: 1.4mm; background: #fff; border-radius: 1.6mm; flex: none; }
+.pc-qr svg { display: block; width: 100%; height: 100%; }
+.pc-foot { font-size: 5.6pt; line-height: 1.35; opacity: .85; }
+
+@media print {
+  @page { size: A4; margin: 8mm; }
+  body.printing { background: #fff !important; }
+  body.printing > :not(#print-area) { display: none !important; }
+  body.printing #print-area { display: block; }
+  .pc-page { display: grid; grid-template-columns: repeat(2, 85.6mm); grid-auto-rows: 54mm; column-gap: 6mm; row-gap: 2mm; justify-content: center; break-after: page; }
+  .pc-page:last-child { break-after: auto; }
+  .pcard-face { -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  .pc-qr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
