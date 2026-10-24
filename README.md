@@ -55,6 +55,15 @@ Rules I added that you did not specify (all in `supabase/schema.sql`, change or 
 - **Consent tick box** on the form, since you are storing personal data.
 - A hidden trap field catches simple form bots.
 
+## Benefits policy (version 1.2.1)
+
+Voluntary donors must not receive anything of monetary value (Drugs and Cosmetics Rules, Rule 122EA; MOHFW voluntary donation guidelines 2025). `policy.html` states the club's policy and cites both, and it is linked from every page footer, the donation form's consent line, each donor's profile, and the admin Benefits tab.
+
+- The starter benefits no longer include a lab-test discount. A new install gets recognition-type benefits only.
+- **Already live?** Run `supabase/benefits-policy-update.sql` once. It hides (never deletes) benefits that sound like money or a discounted service, and adds a few non-monetary ones. Review the result in Admin > Benefits.
+- The benefit editor warns (but does not block) when a title or description sounds like a discount, voucher, cash or points.
+- Acceptable examples under the guidelines: health screening, certificates, pins, medals, badges, refreshments, promotional items, time off work, thank-you messages. I am not a lawyer: have the blood centre's compliance or legal lead read `policy.html` and your benefit list before launch, and edit the page text freely.
+
 ## Donor cards (version 1.2)
 
 **Upgrading from 1.1:** paste the new `supabase/schema.sql` into the SQL Editor and run it. It is safe to re-run and keeps all existing data. Then upload the changed site files.
@@ -97,11 +106,12 @@ The seeded benefits are **placeholders** I wrote. Replace them with what the blo
 ## Files
 
 ```
-index.html  profile.html  card.html  admin.html  manifest.webmanifest  sw.js
+index.html  profile.html  card.html  policy.html  admin.html  manifest.webmanifest  sw.js
 css/style.css  css/admin.css
 js/config.js            <- the only file you edit
-js/common.js  js/register.js  js/profile.js  js/card.js  js/avatars.js  js/admin.js
+js/common.js  js/register.js  js/profile.js  js/card.js  js/policy.js  js/avatars.js  js/admin.js
 js/supabase.js, js/qrcode.js (vendored libraries; qrcode-generator is MIT licensed)
 icons/                  app icons
 supabase/schema.sql     database, security rules, storage, seed data
+supabase/benefits-policy-update.sql   one-off patch for live benefit lists (1.2.1)
 ```
