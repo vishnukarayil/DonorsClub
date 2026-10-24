@@ -114,7 +114,7 @@
         <div class="psec">
           <h2>Membership benefits</h2>
           <ul class="perks">${perks || '<li class="hint">Benefits will appear here soon.</li>'}</ul>
-          <p class="disclaimer" style="margin:12px 0 0">${esc(s ? s.disclaimer : 'Tier levels and membership benefits are subject to change as per our policies. Ahalia blood transfusion services never promotes monetary incentivization of blood donation.')}</p>
+          <p class="disclaimer" style="margin:12px 0 0">${esc(s ? s.disclaimer : 'Tier levels and membership benefits are subject to change as per our policies.')}</p>
         </div>
 
         ${contact}
