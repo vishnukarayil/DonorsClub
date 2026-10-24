@@ -115,7 +115,7 @@
       <!-- TIERS -->
       <section id="tab-tiers" role="tabpanel" hidden>
         <h2>Tier names</h2>
-        <p class="hint">Silver is what a donor gets on their first donation; each repeat donation moves them up one rung. You can rename and recolour the rungs, but not add or remove them.</p>
+        <p class="hint">Rung 1 is what a donor gets on their first donation; each repeat donation moves them up one rung. You can rename and recolour the rungs, but not add or remove them.</p>
         <div id="tier-rows" class="rows"></div>
         <p><button class="btn primary inline" id="save-tiers" type="button">Save tier names</button></p>
       </section>
@@ -124,6 +124,9 @@
       <section id="tab-benefits" role="tabpanel" hidden>
         <h2>Membership benefits</h2>
         <p class="hint">Each benefit unlocks at the tier you choose and stays unlocked for higher tiers. Donors see locked benefits greyed out. Turn a benefit off to hide it everywhere.</p>
+        <div class="callout" style="max-width:760px;margin:10px 0 14px">
+          <b>Keep benefits non-monetary.</b> Under Rule 122EA of the Drugs and Cosmetics Rules and the MOHFW voluntary donation guidelines, donors must not receive anything in cash or kind that has monetary value. <b>Fine:</b> certificates, pins, badges, medals, health screening, refreshments, thank-you messages, event invitations, small keepsakes. <b>Avoid:</b> discounts or free services (such as lab tests), vouchers, points, cash or reimbursement for donating. Read the full <a href="policy.html" target="_blank" rel="noopener">donor club policy</a>.
+        </div>
         <form id="benefit-new" class="newrow" novalidate>
           <input id="nb-title" type="text" placeholder="New benefit title" maxlength="120" aria-label="New benefit title" required>
           <input id="nb-desc" type="text" placeholder="Short description (optional)" maxlength="400" aria-label="New benefit description">
